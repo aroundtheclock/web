@@ -1,13 +1,16 @@
 <template>
     <v-container fluid>
         <v-layout row>
-            <v-flex>
-                <span>{{ label }}</span>
+            <v-flex xs12 lg2>
+                <span class="country-name">{{ timeLine.timeZone.zoneName }}</span>
             </v-flex>
-            <v-flex xs12 lg11 row>
+            <v-flex xs12 lg10 row class="timeline-wrapper">
+                <div class="meeting-handler" ref="meetingHandler"></div>
                 <div class="timeline">
-                    <div class="hour" v-for="hour in 25" :key="hour">
-                        <span class="time-pointer" v-if="isCurrentHour(hour)" :style="{ 'marginLeft': calculatePointerLeft }"></span>
+                    <div class="hour" :class="getBackgroundClass(hour)" v-for="hour in 24" :key="hour">
+                        <span class="time-pointer" v-if="isCurrentHour(hour)" :style="{ 'left': calculatePointerLeft }">
+                            <span>{{ timeLine.currentTime.toFormat('hh:mm a') }}</span>
+                        </span>
                         <span class="hour-label" >{{ getTime(hour) }}</span>
                     </div>
                 </div>
@@ -16,51 +19,138 @@
     </v-container>
 </template>
 <script>
-export default {
-    name: 'Timeline',
-    props: {
-        label:{
-            type: String
+    import interact from "interactjs";
+
+    export default {
+        name: 'Timeline',
+        props: {
+            timeLine:{
+                type: Object
+            }
         },
-        currentTime:{
-            type: Object
-        }
-    },
-    data(){
-        return {}
-    },
-    methods: {
-        getTime(hours){
-            return this.currentTime.set({ hours: this.offsetHours + (hours-1), minutes: this.offsetMinutes }).toFormat('h:ma')
+        mounted(){
+
+            this.$el.querySelectorAll('.hour').forEach(hour=>{
+                console.log(hour.offsetLeft)
+            });
+            let meetingHandler = this.$refs.meetingHandler;
+            this.initInteract(meetingHandler);
         },
-        isCurrentHour(hour){
-            console.log(this.currentHours)
-            return ((this.offsetHours + (hour-1)) % 12) === this.currentHours % 12;
-        }
-    },
-    computed: {
-        offsetHours(){
-            return parseInt(this.currentTime.offset / 60);
+        data(){
+            return {}
         },
-        offsetMinutes(){
-            return parseInt(this.currentTime.offset % 60);
+        methods: {
+            initInteract(selector){
+                debugger;
+                interact(selector)
+                    .draggable({
+                        // enable inertial throwing
+                        inertia: true,
+                        // keep the element within the area of it's parent
+                        restrict: {
+                            restriction: "parent",
+                            endOnly: true,
+                            elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
+                        },
+                        modifiers: [
+                            interact.modifiers.snap({
+                                targets: [
+                                    interact.createSnapGrid({ x: 30, y: 30 })
+                                ],
+                                range: Infinity,
+                                relativePoints: [ { x: 0, y: 0 } ]
+                            }),
+                            interact.modifiers.restrict({
+                                restriction: selector.parentNode,
+                                elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
+                                endOnly: true
+                            })
+                        ],
+                        // startAxis: 'x',
+                        lockAxis: 'x',
+                        // enable autoScroll
+                        autoScroll: true,
+
+                        // call this function on every dragmove event
+                        onmove: this.dragMoveListener,
+                        // call this function on every dragend event
+                        onend: this.onDragEnd
+                    })
+
+            },
+            dragMoveListener: function(event) {
+                var target = event.target,
+                    // keep the dragged position in the data-x/data-y attributes
+                    x =
+                        (parseFloat(target.getAttribute("data-x")) || 0) +
+                        event.dx,
+                    y = 0;
+
+                console.log(x);
+
+                // translate the element
+                target.style.webkitTransform = target.style.transform =
+                    "translate(" + x + "px, 0)";
+
+                // update the posiion attributes
+                target.setAttribute("data-x", x);
+                target.setAttribute("data-y", y);
+            },
+            onDragEnd: function(event) {
+                const  target = event.target;
+            },
+            getTime(hours){
+                return this.currentTime.set({ hours: this.offsetHours + (hours-1), minutes: this.offsetMinutes }).toFormat('h:ma')
+            },
+            isCurrentHour(hour){
+                return ((this.offsetHours + (hour-1))) === this.currentHours;
+            },
+            moveSelector(event){
+                debugger;
+                console.log(event);
+            },
+            getBackgroundClass(hour){
+                const blockHour = (this.offsetHours + (hour-1));
+                if(blockHour > 20 || blockHour < 6){
+                    return 'night';
+                } else if(blockHour < 9 ) {
+                    return 'early-morning';
+                } else if( blockHour > 17 ){
+                    return 'evening';
+                } else {
+                    return 'day';
+                }
+            }
         },
-        currentHours(){
-            return parseInt(this.currentTime.toFormat('h'));
-        },
-        currentMinutes(){
-            return parseInt(this.currentTime.toFormat('m'));
-        },
-        calculatePointerLeft(){
-            return `${(this.currentMinutes - this.offsetMinutes) * 1.67}%`;
+        computed: {
+            currentTime(){
+                return this.timeLine.currentTime;
+            },
+            offsetHours(){
+                return parseInt(this.currentTime.offset / 60);
+            },
+            offsetMinutes(){
+                return parseInt(this.currentTime.offset % 60);
+            },
+            currentHours(){
+                return parseInt(this.currentTime.toFormat('HH'));
+            },
+            currentMinutes(){
+                return parseInt(this.currentTime.toFormat('m'));
+            },
+            calculatePointerLeft(){
+                return `${(this.currentMinutes - this.offsetMinutes) * 1.67}%`;
+            }
         }
     }
-}
 </script>
 <style>
+    .timeline-wrapper{
+        position: relative;
+    }
     .timeline{
         height:50px;
-        border: 1px solid #cdcdcd;
+        /*border: 1px solid #cdcdcd;*/
         display: flex;
         border-radius: 5px;
     }
@@ -70,12 +160,25 @@ export default {
     }
     .hour:before{
         content: '';
-        height: 100%;
+        top: 0;
         width: 1px;
         border-left: 1px solid #cdcdcd;
+        position: absolute;
+        left: 0;
+        height: 15px;
+    }
+    .hour:first-child{
+        -webkit-border-radius: 4px 0 0 4px;
+        -moz-border-radius: 4px 0 0 4px;
+        border-radius: 4px 0 0 4px;
+    }
+    .hour:last-child{
+        -webkit-border-radius: 0 4px 4px 0;
+        -moz-border-radius: 0 4px 4px 0;
+        border-radius: 0 4px 4px 0;
     }
     .hour:first-child:before{
-        border-left: 0px solid #cdcdcd;
+        border-left: 0 solid #cdcdcd;
     }
     .hour-label{
         font-family: Roboto, sans-serif;
@@ -87,18 +190,43 @@ export default {
         text-align: center;
         z-index: 1;
     }
-    .hour:last-child{
-        min-width: 0;
-        padding: 0;
-        flex-grow: 0;
-    }
-    .hour:last-child .hour-label{
-        display: none;
-    }
     .time-pointer{
-        position: relative;
-        height: 100px;
+        position: absolute;
+        height: 100%;
         width: 1px;
         border-left: 1px solid red;
     }
+    .time-pointer span {
+        position: absolute;
+        top: -16px;
+        left: -30px;
+        width: 65px;
+        color: #4d4d4d;
+        font-size: 14px;
+        font-family: sans-serif;
+    }
+    .meeting-handler{
+        border: 2px solid #000;
+        height: 100%;
+        position: absolute;
+        width: 4%;
+        padding: 10px;
+        z-index: 1;
+    }
+    .meeting-handler-inner{
+        flex: 1 1 auto;
+    }
+    .hour.night {
+        background: #4d4d4d;
+        color: #d4d4d4;
+    }
+    .hour.evening, .hour.early-morning{
+        background: #d3e4ea;
+        color: #4d4d4d;
+    }
+    .hour.day{
+        background: #efefef;
+        color: #4d4d4d;
+    }
+
 </style>
