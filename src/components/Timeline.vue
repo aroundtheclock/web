@@ -2,14 +2,14 @@
     <v-container fluid>
         <v-layout row>
             <v-flex xs12 lg2>
-                <span class="country-name">{{ timeLine.timeZone.zoneName }}</span>
+                <span class="country-name">{{ time.zoneName }}</span>
             </v-flex>
             <v-flex xs12 lg10 row class="timeline-wrapper">
                 <div class="meeting-handler" ref="meetingHandler"></div>
                 <div class="timeline">
                     <div class="hour" :class="getBackgroundClass(hour)" v-for="hour in 24" :key="hour">
                         <span class="time-pointer" v-if="isCurrentHour(hour)" :style="{ 'left': calculatePointerLeft }">
-                            <span>{{ timeLine.currentTime.toFormat('hh:mm a') }}</span>
+                            <span>{{ time.toFormat('hh:mm a') }}</span>
                         </span>
                         <span class="hour-label" >{{ getTime(hour) }}</span>
                     </div>
@@ -20,16 +20,16 @@
 </template>
 <script>
     import interact from "interactjs";
+    import DateTime from 'luxon/src/datetime.js'
 
     export default {
         name: 'Timeline',
         props: {
-            timeLine:{
+            time:{
                 type: Object
             }
         },
         mounted(){
-
             this.$el.querySelectorAll('.hour').forEach(hour=>{
                 console.log(hour.offsetLeft)
             });
@@ -41,7 +41,6 @@
         },
         methods: {
             initInteract(selector){
-                debugger;
                 interact(selector)
                     .draggable({
                         // enable inertial throwing
@@ -52,7 +51,7 @@
                             endOnly: true,
                             elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
                         },
-                        modifiers: [
+                        /*modifiers: [
                             interact.modifiers.snap({
                                 targets: [
                                     interact.createSnapGrid({ x: 30, y: 30 })
@@ -65,7 +64,7 @@
                                 elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
                                 endOnly: true
                             })
-                        ],
+                        ],*/
                         // startAxis: 'x',
                         lockAxis: 'x',
                         // enable autoScroll
@@ -79,7 +78,7 @@
 
             },
             dragMoveListener: function(event) {
-                var target = event.target,
+                let target = event.target,
                     // keep the dragged position in the data-x/data-y attributes
                     x =
                         (parseFloat(target.getAttribute("data-x")) || 0) +
@@ -100,17 +99,14 @@
                 const  target = event.target;
             },
             getTime(hours){
-                return this.currentTime.set({ hours: this.offsetHours + (hours-1), minutes: this.offsetMinutes }).toFormat('h:ma')
+                return this.time.set({ hours: this.offsetHours + (hours-1), minutes: this.offsetMinutes }).toFormat('h:ma')
             },
             isCurrentHour(hour){
-                return ((this.offsetHours + (hour-1))) === this.currentHours;
-            },
-            moveSelector(event){
-                debugger;
-                console.log(event);
+                const blockHour = this.getBlockHour(hour);
+                return blockHour === this.currentHours;
             },
             getBackgroundClass(hour){
-                const blockHour = (this.offsetHours + (hour-1));
+                const blockHour = this.getBlockHour(hour);
                 if(blockHour > 20 || blockHour < 6){
                     return 'night';
                 } else if(blockHour < 9 ) {
@@ -120,23 +116,23 @@
                 } else {
                     return 'day';
                 }
+            },
+            getBlockHour(hour){
+                return DateTime.local().plus({ hours: (this.offsetHours + (hour-1))}).hour;
             }
         },
         computed: {
-            currentTime(){
-                return this.timeLine.currentTime;
-            },
             offsetHours(){
-                return parseInt(this.currentTime.offset / 60);
+                return parseInt(this.time.offset / 60);
             },
             offsetMinutes(){
-                return parseInt(this.currentTime.offset % 60);
+                return parseInt(this.time.offset % 60);
             },
             currentHours(){
-                return parseInt(this.currentTime.toFormat('HH'));
+                return parseInt(this.time.toFormat('HH'));
             },
             currentMinutes(){
-                return parseInt(this.currentTime.toFormat('m'));
+                return parseInt(this.time.toFormat('m'));
             },
             calculatePointerLeft(){
                 return `${(this.currentMinutes - this.offsetMinutes) * 1.67}%`;

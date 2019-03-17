@@ -2,12 +2,12 @@
    <v-container fluid>
        <v-layout wrap>
            <v-flex xs12>
-               <Timeline v-for="tl in timelineData" :time-line="tl"></Timeline>
+               <Timeline v-for="tl in timelineData" :time="tl"></Timeline>
            </v-flex>
            <v-flex xs12 lg6 offset-lg3 row>
                <v-layout row>
                    <v-combobox
-                       @change="changeHandler"
+                       v-model="newCountry"
                        :items="timeZones"
                        label="Select Timezone"
                    ></v-combobox>
@@ -20,46 +20,40 @@
 
 <script>
 import DateTime from 'luxon/src/datetime.js'
-import TimeZone from './TimeZone';
+import TimeZoneNew from './TimeZone2';
 import Timeline from './components/Timeline'
 
 export default {
     name: 'App',
     data(){
         return {
-            timeZones: TimeZone.map( value => value.zoneName ),
-            timelineData: []
+            countries: TimeZoneNew.countries,
+            zones: TimeZoneNew.zones,
+            timelineData: [],
+            timeZones: Object.keys(TimeZoneNew.zones).map( value => value ),
+            newCountry: null
         }
     },
     components: {
         Timeline
     },
     methods: {
-        changeHandler(value){
-            console.log(value);
+        setTime(){
+            this.timelineData.forEach( country => {
+                country.currentTime = DateTime.local().setZone(country.zoneName)
+            });
         },
-        getTime(){
-            this.timelineData = [/*{
-                currentTime: DateTime.local().setZone('Europe/London'),
-                timeZone: TimeZone.find( tz => tz.zoneName === 'Europe/London' )
-            },*/{
-                currentTime: DateTime.local().setZone('Asia/Kolkata'),
-                timeZone: TimeZone.find( tz => tz.zoneName === 'Asia/Kolkata' )
-            },{
-                currentTime: DateTime.local().setZone('America/New_York'),
-                timeZone: TimeZone.find( tz => tz.zoneName === 'America/New_York' )
-            },{
-                currentTime: DateTime.local().setZone('Europe/Istanbul'),
-                timeZone: TimeZone.find( tz => tz.zoneName === 'Europe/Istanbul' )
-            }]
+        addToList(country){
+            const time = DateTime.local().setZone(country || this.newCountry);
+            this.timelineData.push(time);
+            this.newCountry = null;
         }
     },
-    computed: {
-    },
     mounted(){
+        ['Europe/Istanbul', 'Asia/Kolkata', 'America/Toronto'].forEach( country => this.addToList(country));
         setInterval(()=>{
-            this.getTime();
-        },60000)
+            this.setTime();
+        },3000)
     }
 }
 </script>
