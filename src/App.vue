@@ -4,7 +4,7 @@
            <v-flex xs12>
                <Timeline v-for="tl in timelineData" :time="tl"></Timeline>
            </v-flex>
-           <v-flex xs12 lg6 offset-lg3 row>
+           <v-flex xs12 lg2 offset-lg10 row>
                <v-layout row>
                    <v-combobox
                        v-model="newCountry"
@@ -20,17 +20,17 @@
 
 <script>
 import DateTime from 'luxon/src/datetime.js'
-import TimeZoneNew from './TimeZone2';
+import TimeZone from './TimeZone2';
 import Timeline from './components/Timeline'
 
 export default {
     name: 'App',
     data(){
         return {
-            countries: TimeZoneNew.countries,
-            zones: TimeZoneNew.zones,
+            countries: TimeZone.countries,
+            zones: TimeZone.zones,
             timelineData: [],
-            timeZones: Object.keys(TimeZoneNew.zones).map( value => value ),
+            timeZones: Object.keys(TimeZone.zones).map( value => value ),
             newCountry: null
         }
     },
@@ -39,8 +39,10 @@ export default {
     },
     methods: {
         setTime(){
-            this.timelineData.forEach( country => {
-                country.currentTime = DateTime.local().setZone(country.zoneName)
+            this.timelineData = this.timelineData.map( country => {
+                console.log(country);
+                console.log(DateTime.local().setZone(country.zoneName));
+                return DateTime.local().setZone(country.zoneName)
             });
         },
         addToList(country){
@@ -53,7 +55,7 @@ export default {
         ['Europe/Istanbul', 'Asia/Kolkata', 'America/Toronto'].forEach( country => this.addToList(country));
         setInterval(()=>{
             this.setTime();
-        },3000)
+        },60000)
     }
 }
 </script>

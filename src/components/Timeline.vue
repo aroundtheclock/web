@@ -11,7 +11,7 @@
                         <span class="time-pointer" v-if="isCurrentHour(hour)" :style="{ 'left': calculatePointerLeft }">
                             <span>{{ time.toFormat('hh:mm a') }}</span>
                         </span>
-                        <span class="hour-label" >{{ getTime(hour) }}</span>
+                        <span class="hour-label" >{{ getTime(hour).toFormat('h:ma') }}</span>
                     </div>
                 </div>
             </v-flex>
@@ -30,9 +30,9 @@
             }
         },
         mounted(){
-            this.$el.querySelectorAll('.hour').forEach(hour=>{
-                console.log(hour.offsetLeft)
-            });
+//             this.$el.querySelectorAll('.hour').forEach(hour=>{
+// //                console.log(hour.offsetLeft)
+//             });
             let meetingHandler = this.$refs.meetingHandler;
             this.initInteract(meetingHandler);
         },
@@ -51,20 +51,14 @@
                             endOnly: true,
                             elementRect: { top: 0, left: 0, bottom: 1, right: 1 }
                         },
-                        /*modifiers: [
-                            interact.modifiers.snap({
-                                targets: [
-                                    interact.createSnapGrid({ x: 30, y: 30 })
-                                ],
-                                range: Infinity,
-                                relativePoints: [ { x: 0, y: 0 } ]
-                            }),
-                            interact.modifiers.restrict({
-                                restriction: selector.parentNode,
-                                elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
-                                endOnly: true
-                            })
-                        ],*/
+                        // snap:{
+                        //     targets: [
+                        //         interact.createSnapGrid({ x: 30, y: 30 })
+                        //     ],
+                        //     range: Infinity,
+                        //     relativePoints: [ { x: 0, y: 0 } ]
+                        // },
+
                         // startAxis: 'x',
                         lockAxis: 'x',
                         // enable autoScroll
@@ -75,7 +69,35 @@
                         // call this function on every dragend event
                         onend: this.onDragEnd
                     })
+                    .resizable({
+                        // resize from all edges and corners
+                        edges: { left: true, right: true, bottom: false, top: false },
+                        inertia: true,
+                        restrictEdges: {
+                            outer: 'parent',
+                            endOnly: true,
+                        },
+                        resizemove: (event) => {
+                            let target = event.target,
+                                x = (parseFloat(target.getAttribute('data-x')) || 0),
+                                y = (parseFloat(target.getAttribute('data-y')) || 0);
 
+                            // update the element's style
+                            target.style.width  = event.rect.width + 'px';
+                            target.style.height = event.rect.height + 'px';
+
+                            // translate when resizing from top or left edges
+                            x += event.deltaRect.left;
+                            y += event.deltaRect.top;
+
+                            target.style.webkitTransform = target.style.transform =
+                                'translate(' + x + 'px,' + y + 'px)';
+
+                            target.setAttribute('data-x', x);
+                            target.setAttribute('data-y', y);
+                            target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height);
+                        }
+                    });
             },
             dragMoveListener: function(event) {
                 let target = event.target,
@@ -99,14 +121,16 @@
                 const  target = event.target;
             },
             getTime(hours){
-                return this.time.set({ hours: this.offsetHours + (hours-1), minutes: this.offsetMinutes }).toFormat('h:ma')
+                return this.time.set({ hours: this.offsetHours + (hours-1), minutes: this.offsetMinutes })
             },
             isCurrentHour(hour){
                 const blockHour = this.getBlockHour(hour);
                 return blockHour === this.currentHours;
             },
             getBackgroundClass(hour){
-                const blockHour = this.getBlockHour(hour);
+                const blockHour = this.getTime(hour).toFormat('HH');
+                console.log(blockHour);
+
                 if(blockHour > 20 || blockHour < 6){
                     return 'night';
                 } else if(blockHour < 9 ) {
@@ -129,7 +153,7 @@
                 return parseInt(this.time.offset % 60);
             },
             currentHours(){
-                return parseInt(this.time.toFormat('HH'));
+                return parseInt(this.time.toFormat('HH')) + 1;
             },
             currentMinutes(){
                 return parseInt(this.time.toFormat('m'));
@@ -149,6 +173,7 @@
         /*border: 1px solid #cdcdcd;*/
         display: flex;
         border-radius: 5px;
+        box-shadow: 0 2px 7px 0 rgba(0,0,0,.3)
     }
     .hour{
         flex: 1 1 0;
