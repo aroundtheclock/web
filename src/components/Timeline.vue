@@ -5,7 +5,7 @@
                 <span class="country-name">{{ time.zoneName }}</span>
             </v-flex>
             <v-flex xs12 lg10 row class="timeline-wrapper">
-                <div v-movable v-resizable class="meeting-handler" ref="meetingHandler"></div>
+                <div v-movable="moveProp" v-resizable class="meeting-handler" ref="meetingHandler"></div>
                 <div class="timeline">
                     <div class="hour" :class="getBackgroundClass(hour-1)" v-for="hour in 24" :key="hour">
                         <span class="time-pointer" v-if="isCurrentHour(hour-1)" :style="{ 'left': calculatePointerLeft }">
@@ -19,7 +19,6 @@
     </v-container>
 </template>
 <script>
-    import DateTime from 'luxon/src/datetime';
     import { Resizable, Movable } from '../directives';
 
     export default {
@@ -34,15 +33,21 @@
             Movable
         },
         data(){
-            return {}
+            return {
+                moveProp: null
+            }
+        },
+        mounted(){
+            this.moveProp = {
+                width:  document.querySelector('.hour').offsetWidth
+            }
         },
         methods: {
             getTime(hours){
                 return this.time.set({ hours: this.offsetHours + (hours), minutes: this.offsetMinutes })
             },
             isCurrentHour(hour){
-                const blockHour = this.getBlockHour(hour);
-                return blockHour === this.currentHours;
+                return this.blockHour(hour) === this.currentHours;
             },
             getBackgroundClass(hour){
                 const blockHour = this.getTime(hour).toFormat('HH');
@@ -57,8 +62,8 @@
                     return 'day';
                 }
             },
-            getBlockHour(hour){
-                return DateTime.local().plus({ hours: (this.offsetHours + (hour))}).hour;
+            blockHour(hour){
+                return parseInt(this.getTime(hour).toFormat('HH'));
             }
         },
         computed: {
@@ -69,14 +74,14 @@
                 return parseInt(this.time.offset % 60);
             },
             currentHours(){
-                return parseInt(this.time.toFormat('HH')) + 1;
+                return parseInt(this.time.toFormat('HH'));
             },
             currentMinutes(){
                 return parseInt(this.time.toFormat('m'));
             },
             calculatePointerLeft(){
                 return `${(this.currentMinutes - this.offsetMinutes) * 1.67}%`;
-            }
+            },
         }
     }
 </script>

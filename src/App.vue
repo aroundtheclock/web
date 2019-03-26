@@ -55,7 +55,7 @@ export default {
         ['Europe/Istanbul', 'Asia/Kolkata', 'America/Toronto'].forEach( country => this.addToList(country));
         setInterval(()=>{
             this.setTime();
-        },60000)
+        },30000)
     }
 }
 </script>
