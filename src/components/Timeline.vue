@@ -1,17 +1,17 @@
 <template>
     <v-container fluid>
-        <v-layout row>
-            <v-flex xs12 lg2>
+        <v-layout row wrap>
+            <v-flex sm12 xs12 lg2>
                 <span class="country-name">{{ time.zoneName }}</span>
             </v-flex>
-            <v-flex xs12 lg10 row class="timeline-wrapper">
+            <v-flex sm12 xs12 lg10 row class="timeline-wrapper">
                 <div v-movable="moveProp" v-resizable class="meeting-handler" ref="meetingHandler"></div>
                 <div class="timeline">
                     <div class="hour" :class="getBackgroundClass(hour-1)" v-for="hour in 24" :key="hour">
                         <span class="time-pointer" v-if="isCurrentHour(hour-1)" :style="{ 'left': calculatePointerLeft }">
                             <span>{{ time.toFormat('hh:mm a') }}</span>
                         </span>
-                        <span class="hour-label" >{{ getTime(hour-1).toFormat('h:ma') }}</span>
+                        <span class="hour-label hidden-sm-and-down">{{ getTime(hour-1).toFormat('h:ma') }}</span>
                     </div>
                 </div>
             </v-flex>
